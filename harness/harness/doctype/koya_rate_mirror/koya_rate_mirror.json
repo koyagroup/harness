@@ -1,0 +1,71 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-05-29 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "request_id",
+  "schema_version",
+  "snapshot_at",
+  "received_at",
+  "last_source",
+  "rates_json"
+ ],
+ "fields": [
+  {
+   "fieldname": "request_id",
+   "fieldtype": "Data",
+   "label": "Koya Request ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "schema_version",
+   "fieldtype": "Int",
+   "label": "Schema Version",
+   "read_only": 1
+  },
+  {
+   "fieldname": "snapshot_at",
+   "fieldtype": "Datetime",
+   "label": "Snapshot At (Koya)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "received_at",
+   "fieldtype": "Datetime",
+   "label": "Received At (Harness)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_source",
+   "fieldtype": "Data",
+   "label": "Sources",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rates_json",
+   "fieldtype": "Long Text",
+   "label": "Rates (JSON)",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-05-29 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Harness",
+ "name": "Koya Rate Mirror",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "read": 1,
+   "role": "System Manager"
+  }
+ ],
+ "read_only": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 0
+}
