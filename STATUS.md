@@ -3,14 +3,17 @@
 > Single source of truth for the harness app's current state. Mirrors the Koya-side
 > STATUS so the two builds stay reconcilable. No secret values here — key names only.
 
-**Last updated:** 2026-05-29 (step-02)
+**Last updated:** 2026-05-29 (step-03)
 
 ## Current phase
-**Phase 2 built on the harness side — K→H display-mirror receivers live and proven.**
-Verifier reference-vector test green; full suite 36/36; live signed round-trip against
-our own gunicorn passes all outcomes. Blocking only on the **live cross-system joint
-test** (push-lands / stale / kill-switch), which is staged pending Koya's mirror sender
-+ egress-IP allowlisting at the harness edge.
+**Phase 2 DONE on the harness side — display mirrors live, §6 kill-switch PROVEN.**
+Channel live end-to-end since 14:25 (Koya pushes → verifier accepts → displays populate).
+Verifier reference-vector test green; full suite 36/36; live signed round-trip green. The
+§6 kill-switch joint test passed: with the harness dark (maintenance 503, T+0 14:57:54Z →
+restore 15:01:50Z) Koya stayed fully healthy (quote path refreshed mid-outage, worker-slow
+unaffected, 0 unhandled rejections, mirror pushes 503+abandoned-no-retry); on restore both
+mirrors resumed within cadence (txns +12s, rates +43s) and displays un-staled. See
+`docs/progress/step-03.md`.
 
 ## Wire / secrets state
 - Contract: v1 (inbound, LAW) + v1.1 Phase 2 addendum (display mirrors), now checked in
@@ -38,9 +41,12 @@ test** (push-lands / stale / kill-switch), which is staged pending Koya's mirror
 ## Last joint tests
 - 2026-05-29 (Phase 1) — four-outcome inbound test on the rotated secret: **4/4 PASS**.
   See `docs/progress/step-01.md`.
-- 2026-05-29 (Phase 2) — harness-side proofs: verifier 15/15, endpoints 9/9, full app
-  36/36; live signed HTTP round-trip 200/401/401/401 + 400s; PII warn-and-store; snapshot
-  overwrite. **Live cross-system joint test STAGED** (§6), not yet run. See `step-02.md`.
+- 2026-05-29 (Phase 2 build) — harness-side proofs: verifier 15/15, endpoints 9/9, full
+  app 36/36; live signed HTTP round-trip 200/401/401/401 + 400s; PII warn-and-store;
+  snapshot overwrite. See `step-02.md`.
+- 2026-05-29 (Phase 2 §6 joint test) — **PASSED.** Kill-switch: harness dark 14:57:54Z →
+  15:01:50Z; Koya unaffected (quote refreshed mid-outage); mirrors auto-resumed within
+  cadence on restore. See `step-03.md`.
 
 ## What exists in the app
 - Outbound signer (Phase 1): `koya_harness/{sign,headers,client}.py`.
@@ -54,20 +60,19 @@ test** (push-lands / stale / kill-switch), which is staged pending Koya's mirror
   (24) — 36/36 green.
 
 ## Open items / flags
-- **Live joint test pending** — needs Koya's mirror sender live + Koya egress IP(s)
-  allowlisted at the harness edge for the two mirror paths.
-- **Endpoint path reconciliation** — contract §2.1/§3.1 vs the reachable whitelist URLs
-  above (step-02 D1). Needs both-sides sign-off.
-- **Worker reload** — live gunicorn workers cached the mirror module at first request;
-  a full `supervisorctl`/worker restart brings the latest module live over HTTP
-  (proven in-process meanwhile). Same no-sudo constraint as step-01 D4. Do before the
-  live joint test.
-- Re-rotate both secrets before mainnet if this session's transcript is retained
+- **Endpoint path text reconciliation** — contract §2.1/§3.1 path strings vs the reachable
+  whitelist URLs (step-02 D1). Resolved *in practice* (Koya pushes 200 to
+  `/api/method/harness.koya_harness.api.mirrors.*`); contract text wants a matching edit on
+  sign-off.
+- Re-rotate both secrets before mainnet if this session's transcripts are retained
   (values were pasted in-session — see step-01 D3).
 - `allow_tests=true` + `developer_mode=1` set on the site (step-02 D4) — operator may
-  disable `allow_tests` after verification.
+  disable `allow_tests`.
+- Stale-badge gate (§6.2) was not separately exercised as its own pause; the kill-switch
+  window covered the stale→fresh transition implicitly (mirrors went stale during the
+  outage and un-staled on resume). A dedicated stale-only pause can be run any time via the
+  same lever if Koya wants it logged distinctly.
 
 ## Next
-Run the Phase-2 §6 joint test with Koya (push-lands → stale-badge → kill-switch), record
-timestamps in step-02. Phase 2 done on the harness side, blocking only on that live test
-+ Koya's grep-proof confirmation. Do not start Phase 3 before it is recorded.
+Phase 2 is done on the harness side (build + §6 joint test). Cross-check against Koya's
+step-54, then Phase 3 may begin.
