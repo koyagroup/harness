@@ -1,6 +1,6 @@
 import requests
 
-from harness.koya_harness.config import get_koya_base_url, get_shared_secret
+from harness.koya_harness.config import get_inbound_secret, get_koya_base_url
 from harness.koya_harness.headers import build_signed_request
 
 _RETRYABLE_ERROR_CODES = {"signature_mismatch", "nonce_replay", "timestamp_skew"}
@@ -15,7 +15,7 @@ def post_signed(path: str, payload: dict) -> dict:
 	rebuilding headers each time so each attempt has a fresh timestamp and a
 	fresh nonce. Returns the parsed JSON response (success OR error envelope).
 	"""
-	secret = get_shared_secret()
+	secret = get_inbound_secret()
 	url = f"{get_koya_base_url()}{path}"
 
 	last_response = None
@@ -48,7 +48,7 @@ def post_signed(path: str, payload: dict) -> dict:
 
 	try:
 		return last_response.json()
-	except (ValueError, AttributeError):
+	except ValueError, AttributeError:
 		return {
 			"ok": False,
 			"error": {

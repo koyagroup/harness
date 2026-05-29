@@ -1,13 +1,13 @@
 import frappe
 
-_SECRET_KEY = "harness_shared_secret"
+_SECRET_KEY = "harness_inbound_secret"
 _BASE_URL_KEY = "harness_koya_base_url"
 
 
-def get_shared_secret() -> str:
+def get_inbound_secret() -> str:
 	secret = frappe.conf.get(_SECRET_KEY)
 	if not secret:
-		frappe.throw("Harness shared secret is not configured")
+		frappe.throw("Harness inbound secret is not configured")
 	return secret
 
 

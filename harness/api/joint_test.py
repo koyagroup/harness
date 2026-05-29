@@ -20,7 +20,7 @@ import uuid
 import frappe
 import requests
 
-from harness.koya_harness.config import get_koya_base_url, get_shared_secret
+from harness.koya_harness.config import get_inbound_secret, get_koya_base_url
 from harness.koya_harness.headers import build_signed_request
 from harness.koya_harness.sign import compute_signature
 
@@ -62,9 +62,9 @@ def _case_replay(secret: str) -> dict:
 
 
 def _case_skew(secret: str) -> dict:
-	raw_body = json.dumps(
-		{"echo": "joint-test-4-skew"}, separators=(",", ":"), ensure_ascii=False
-	).encode("utf-8")
+	raw_body = json.dumps({"echo": "joint-test-4-skew"}, separators=(",", ":"), ensure_ascii=False).encode(
+		"utf-8"
+	)
 	ts = str(int(time.time()) - 3600)
 	nonce = str(uuid.uuid4()).lower()
 	sig = compute_signature(secret, ts, nonce, raw_body)
@@ -79,7 +79,7 @@ def _case_skew(secret: str) -> dict:
 
 @frappe.whitelist()
 def run_four_outcomes() -> dict:
-	secret = get_shared_secret()
+	secret = get_inbound_secret()
 	results = {
 		"1_valid": _case_valid(secret),
 		"2_forged": _case_forged(secret),
