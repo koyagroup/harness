@@ -1,0 +1,13 @@
+{
+ "creation": "2026-05-30 14:30:00.000000",
+ "docstatus": 0,
+ "doctype": "Dashboard Chart Source",
+ "idx": 0,
+ "modified": "2026-05-30 14:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "Harness",
+ "name": "Koya Conversion Status Counts",
+ "owner": "Administrator",
+ "source_name": "Koya Conversion Status Counts",
+ "timeseries": 0
+}

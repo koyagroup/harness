@@ -10,16 +10,24 @@ app_license = "mit"
 
 # required_apps = []
 
-# Each item in the list will be shown as an app in the apps page
-# add_to_apps_screen = [
-# 	{
-# 		"name": "harness",
-# 		"logo": "/assets/harness/logo.png",
-# 		"title": "Harness",
-# 		"route": "/harness",
-# 		"has_permission": "harness.api.permission.has_app_permission"
-# 	}
-# ]
+# Desk app identity — the /apps launcher tile + the app switcher. Mirrors the Frappe CRM
+# pattern (crm/hooks.py:7-23). Assets live in harness/public/images/ (served at /assets/harness/).
+# Routes point at the DESK landing page (Phase-3 Operations Console), never an SPA — the harness
+# is a desk app.
+app_icon_url = "/assets/harness/images/logo.png"
+app_icon_title = "Koya Harness"
+app_icon_route = "/app/koya-harness-home"
+
+# Shown on the /apps launcher, gated by has_permission (harness roles only).
+add_to_apps_screen = [
+	{
+		"name": "harness",
+		"logo": "/assets/harness/images/logo.png",
+		"title": "Koya Harness",
+		"route": "/app/koya-harness-home",
+		"has_permission": "harness.api.permission.check_app_permission",
+	}
+]
 
 # Includes in <head>
 # ------------------
@@ -255,4 +263,3 @@ app_license = "mit"
 # ------------
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
-

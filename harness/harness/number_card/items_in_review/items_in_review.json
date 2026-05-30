@@ -1,0 +1,17 @@
+{
+ "creation": "2026-05-30 14:30:00.000000",
+ "doctype": "Number Card",
+ "document_type": "Koya Review Item",
+ "dynamic_filters_json": "[]",
+ "filters_json": "[]",
+ "function": "Count",
+ "is_public": 1,
+ "is_standard": 1,
+ "label": "Items In Review",
+ "modified": "2026-05-30 14:30:00.000000",
+ "module": "Harness",
+ "name": "Items In Review",
+ "show_percentage_stats": 1,
+ "stats_time_interval": "Daily",
+ "type": "Document Type"
+}

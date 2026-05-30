@@ -3,7 +3,19 @@
 > Single source of truth for the harness app's current state. Mirrors the Koya-side
 > STATUS so the two builds stay reconcilable. No secret values here — key names only.
 
-**Last updated:** 2026-05-30 (step-05)
+**Last updated:** 2026-05-30 (step-06)
+
+## App polish (step-06, Koya-independent)
+The harness is now a **polished, desk-installable app**: app-launcher identity + branding
+(`app_icon_url`/`add_to_apps_screen` → the operator's `logo.png`, gated by
+`harness.api.permission.check_app_permission`), an enhanced **Koya Harness workspace** with a
+DASHBOARD section (3 number cards + 3 charts) above the OPERATIONS shortcuts, and a Dashboard link on
+the Operations Console. Two chart tracks: **zero-code** Number Cards + Group By charts over the
+normalized `Koya Review Item`, and a **Dashboard Chart Source** (`Koya Conversion Status Counts`)
+parsing the mirror's `status_counts_json` for a Custom chart. All is_standard, synced from module
+folders on migrate; role-gating preserved; money path untouched; **164 tests unchanged**. Placeholder
+`logo.png`/`desk.png` (identical) to be replaced with real assets. See `docs/progress/step-06.md`.
+
 
 ## Current phase
 **Phase 4 HARNESS HALF complete — live-fire OFF — awaiting Koya's settlement-decision endpoint

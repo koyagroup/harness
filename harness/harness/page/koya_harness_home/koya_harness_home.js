@@ -44,6 +44,13 @@ frappe.pages["koya-harness-home"].on_page_load = function (wrapper) {
 				<div data-mirror class="khh-mirror">${__("Loading…")}</div>
 			</div>
 
+			<div class="khh-section">
+				<div class="khh-h">${__("Dashboard")}</div>
+				<div class="khh-dash">
+					<a class="khh-link" data-dashboard href="#">${__("Open dashboard (charts & number cards)")} →</a>
+				</div>
+			</div>
+
 			${
 				is_compliance
 					? `<div class="khh-section">
@@ -67,6 +74,10 @@ frappe.pages["koya-harness-home"].on_page_load = function (wrapper) {
 		$root.find("[data-audit]").on("click", (e) => {
 			e.preventDefault();
 			frappe.set_route("List", "Koya Harness Audit Log");
+		});
+		$root.find("[data-dashboard]").on("click", (e) => {
+			e.preventDefault();
+			frappe.set_route("Workspaces", "Koya Harness");
 		});
 	}
 

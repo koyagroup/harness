@@ -1,0 +1,17 @@
+{
+ "creation": "2026-05-30 14:30:00.000000",
+ "doctype": "Number Card",
+ "document_type": "Koya Review Item",
+ "dynamic_filters_json": "[]",
+ "filters_json": "[[\"Koya Review Item\",\"risk_score\",\">=\",90]]",
+ "function": "Count",
+ "is_public": 1,
+ "is_standard": 1,
+ "label": "High-Score Holds",
+ "modified": "2026-05-30 14:30:00.000000",
+ "module": "Harness",
+ "name": "High-Score Holds",
+ "show_percentage_stats": 0,
+ "stats_time_interval": "Daily",
+ "type": "Document Type"
+}
