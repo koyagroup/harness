@@ -14,7 +14,8 @@ import json
 
 import frappe
 
-from harness.koya_harness import risk_render
+from harness.koya_harness import decision_render, risk_render
+from harness.koya_harness.api.settlement import can_send_decisions
 
 _REVIEW = "Koya Review Item"
 _STALE_SECONDS = 180  # reuse the transactions-mirror cadence threshold (§5)
@@ -106,11 +107,21 @@ def review_item_detail(name: str) -> dict:
 
 	doc = frappe.get_doc(_REVIEW, name)
 	breakdown = _loads(doc.risk_breakdown_json)
+	hold_reason = doc.get("hold_reason")
 	return {
 		"permitted": True,
 		"found": True,
 		"ref": doc.ref,
 		"state": doc.state,
+		# Phase 4: the hold-reason banner + the (server-rendered, single-sourced) reviewer
+		# affordance. `can_decide` is a UI hint only — the real money-path gate is server-side
+		# on the send method (settlement._require_decision_role).
+		"hold_reason": hold_reason,
+		"hold_reason_label": decision_render.hold_reason_label(hold_reason),
+		"hold_reason_class": decision_render.hold_reason_class(hold_reason),
+		"can_decide": can_send_decisions(),
+		"confirm_approve": decision_render.confirmation_text(hold_reason, "APPROVE"),
+		"confirm_reject": decision_render.confirmation_text(hold_reason, "REJECT"),
 		"asset": doc.asset,
 		"kes_amount": doc.kes_amount,
 		"kes_display": risk_render.format_kes(doc.kes_amount),

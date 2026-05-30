@@ -99,5 +99,51 @@ class TestRetryBehavior(unittest.TestCase):
 		self.assertEqual(result["error"]["code"], "transport_error")
 
 
+class TestWithStatus(unittest.TestCase):
+	"""Phase-4 opt-in: post_signed(..., with_status=True) returns (body, http_status). The
+	default (no flag) MUST still return the bare body dict — Phase-1 callers depend on it."""
+
+	@patch("harness.koya_harness.client.get_inbound_secret", return_value="s")
+	@patch("harness.koya_harness.client.get_koya_base_url", return_value="https://koya.test")
+	@patch("harness.koya_harness.client.requests.post")
+	def test_default_return_is_bare_dict(self, mock_post, *_):
+		ok = MagicMock(status_code=200)
+		ok.json.return_value = {"ok": True, "data": {"resulting_state": "PAYMENT_PENDING"}}
+		mock_post.return_value = ok
+		result = client.post_signed("/internal/harness/settlement-decision", {"x": 1})
+		self.assertEqual(result, {"ok": True, "data": {"resulting_state": "PAYMENT_PENDING"}})
+
+	@patch("harness.koya_harness.client.get_inbound_secret", return_value="s")
+	@patch("harness.koya_harness.client.get_koya_base_url", return_value="https://koya.test")
+	@patch("harness.koya_harness.client.requests.post")
+	def test_with_status_returns_tuple_on_200(self, mock_post, *_):
+		ok = MagicMock(status_code=200)
+		ok.json.return_value = {"ok": True, "data": {}}
+		mock_post.return_value = ok
+		body, status = client.post_signed("/p", {"x": 1}, with_status=True)
+		self.assertEqual(status, 200)
+		self.assertTrue(body["ok"])
+
+	@patch("harness.koya_harness.client.get_inbound_secret", return_value="s")
+	@patch("harness.koya_harness.client.get_koya_base_url", return_value="https://koya.test")
+	@patch("harness.koya_harness.client.requests.post")
+	def test_with_status_surfaces_409(self, mock_post, *_):
+		conflict = MagicMock(status_code=409)
+		conflict.json.return_value = {"ok": False, "error": {"code": "conflict"}}
+		mock_post.return_value = conflict
+		body, status = client.post_signed("/p", {"x": 1}, with_status=True)
+		self.assertEqual(status, 409)
+		self.assertEqual(body["error"]["code"], "conflict")
+
+	@patch("harness.koya_harness.client.get_inbound_secret", return_value="s")
+	@patch("harness.koya_harness.client.get_koya_base_url", return_value="https://koya.test")
+	@patch("harness.koya_harness.client.requests.post")
+	def test_with_status_transport_error_status_none(self, mock_post, *_):
+		mock_post.side_effect = requests.ConnectionError("refused")
+		body, status = client.post_signed("/p", {"x": 1}, with_status=True)
+		self.assertIsNone(status)
+		self.assertEqual(body["error"]["code"], "transport_error")
+
+
 if __name__ == "__main__":
 	unittest.main()

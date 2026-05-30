@@ -226,6 +226,10 @@ def _reconcile_review_items(recent: list, received_at) -> None:
 				doc = frappe.new_doc(_REVIEW_ITEM)
 				doc.ref = ref
 			doc.state = item.get("state")
+			# hold_reason (Phase 4): additive field on the mirror item. Captured forward-compat —
+			# absent -> None, never blocks the upsert. The exact Koya field name is pending the
+			# settlement-decision endpoint sign-off (see step-05); `hold_reason` is the expected key.
+			doc.hold_reason = item.get("hold_reason")
 			doc.asset = item.get("asset")
 			doc.kes_amount = item.get("kes_amount")
 			doc.asset_amount = item.get("asset_amount")

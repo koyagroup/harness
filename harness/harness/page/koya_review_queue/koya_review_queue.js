@@ -118,6 +118,11 @@ frappe.pages["koya-review-queue"].on_page_load = function (wrapper) {
 
 		$root.html(`
 			<div class="krq-back" data-back="1">← ${__("Back to queue")}</div>
+			${
+				d.hold_reason_label
+					? `<div class="krq-hold krq-hold--${esc(d.hold_reason_class)}">${esc(d.hold_reason_label)}</div>`
+					: ""
+			}
 			<div class="krq-detail-card">
 				<div class="krq-score-wrap">
 					<div class="krq-score">${esc(d.score == null ? "—" : d.score)} <span class="krq-score-max">/ 100</span></div>
@@ -137,8 +142,99 @@ frappe.pages["koya-review-queue"].on_page_load = function (wrapper) {
 			</div>
 			<div class="krq-bd-title">${__("Risk breakdown")}</div>
 			<div class="krq-bd-host">${d.breakdown_html || ""}</div>
+			${d.can_decide ? decision_panel() : ""}
 		`);
 		$root.find("[data-back]").on("click", () => frappe.set_route("koya-review-queue"));
+		if (d.can_decide) wire_decision(d);
+	}
+
+	// The approve/reject affordance is drawn ONLY when the server says this user may decide
+	// (defence-in-depth — the real money-path gate is server-side on the send method). Reject
+	// requires a non-empty reason; both decisions go through a reason-aware confirmation whose
+	// text the SERVER supplies (single-sourced with the Python decision_render helpers).
+	function decision_panel() {
+		return `
+			<div class="krq-decision" data-decision-panel="1">
+				<div class="krq-decision-actions">
+					<button class="btn btn-sm btn-success" data-act="approve">${__("Approve")}</button>
+					<button class="btn btn-sm btn-danger" data-act="reject">${__("Reject")}</button>
+				</div>
+				<div class="krq-reject-form" style="display:none;">
+					<textarea class="form-control krq-reject-reason" rows="2"
+						placeholder="${__("Reason (required to reject)")}"></textarea>
+					<div class="krq-reject-actions">
+						<button class="btn btn-sm btn-danger" data-act="reject-confirm">${__("Submit rejection")}</button>
+						<button class="btn btn-sm btn-default" data-act="reject-cancel">${__("Cancel")}</button>
+					</div>
+				</div>
+				<div class="krq-decision-result" style="display:none;"></div>
+			</div>`;
+	}
+
+	function wire_decision(d) {
+		const $panel = $root.find("[data-decision-panel]");
+		$panel.find('[data-act="approve"]').on("click", () => {
+			frappe.confirm(d.confirm_approve, () => send_decision(d, "APPROVE", null));
+		});
+		$panel.find('[data-act="reject"]').on("click", () => {
+			$panel.find(".krq-reject-form").show();
+			$panel.find(".krq-reject-reason").trigger("focus");
+		});
+		$panel.find('[data-act="reject-cancel"]').on("click", () => {
+			$panel.find(".krq-reject-form").hide();
+		});
+		$panel.find('[data-act="reject-confirm"]').on("click", () => {
+			const reason = ($panel.find(".krq-reject-reason").val() || "").trim();
+			if (!reason) {
+				frappe.msgprint(__("A reason is required to reject."));
+				return;
+			}
+			frappe.confirm(d.confirm_reject, () => send_decision(d, "REJECT", reason));
+		});
+	}
+
+	function send_decision(d, decision, reason) {
+		const $panel = $root.find("[data-decision-panel]");
+		$panel.find("button").prop("disabled", true); // double-submit guard
+		frappe.call({
+			method: "harness.koya_harness.api.settlement.send_settlement_decision",
+			args: { session_ref: d.ref, decision: decision, reason: reason },
+			callback: (r) => {
+				const res = r && r.message;
+				const $result = $panel.find(".krq-decision-result");
+				if (!res) {
+					$panel.find("button").prop("disabled", false);
+					return;
+				}
+				const sev = res.severity || "info";
+				$result
+					.attr("class", "krq-decision-result krq-result--" + esc(sev))
+					.show()
+					.html(
+						esc(res.message) +
+							(res.resulting_label
+								? `<div class="krq-result-state">${esc(res.resulting_label)}</div>`
+								: ""),
+					);
+				$panel.find(".krq-reject-form").hide();
+				if (res.ok) {
+					// Accepted / idempotent: the item leaves the queue on the next snapshot
+					// (Koya's skip-flag). Hide the actions so it cannot be re-submitted.
+					$panel.find(".krq-decision-actions").hide();
+				} else {
+					// Conflict / error / transport — let the reviewer retry (idempotency is safe).
+					$panel.find("button").prop("disabled", false);
+				}
+			},
+			error: () => {
+				$panel.find("button").prop("disabled", false);
+				$panel
+					.find(".krq-decision-result")
+					.attr("class", "krq-decision-result krq-result--warning")
+					.show()
+					.text(__("The decision may not have landed — check the state and retry."));
+			},
+		});
 	}
 
 	route_render();
@@ -234,6 +330,22 @@ function krq_inject_styles() {
 		.krq-bd-table td { padding: 6px 8px; border-bottom: 1px solid var(--border-color); }
 		.krq-bd-row--muted { opacity: 0.45; font-size: 11.5px; }
 		.krq-signal { font-family: var(--font-stack-mono, monospace); font-size: 11.5px; }
+		.krq-hold { font-size: 12.5px; font-weight: 600; padding: 9px 12px; border-radius: 8px;
+			margin: 0 0 14px; border: 1px solid transparent; }
+		.krq-hold--prepay { color: #9a6700; background: rgba(212,167,44,0.12); border-color: rgba(212,167,44,0.4); }
+		.krq-hold--postpay { color: #8a1f11; background: rgba(193,42,28,0.12); border-color: rgba(193,42,28,0.5); }
+		.krq-hold--other, .krq-hold--none { color: var(--text-muted); background: var(--control-bg, rgba(125,125,125,0.10)); }
+		.krq-decision { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-color); }
+		.krq-decision-actions { display: flex; gap: 10px; }
+		.krq-decision-actions .btn { min-width: 96px; }
+		.krq-reject-form { margin-top: 12px; max-width: 480px; }
+		.krq-reject-actions { display: flex; gap: 8px; margin-top: 8px; }
+		.krq-decision-result { margin-top: 14px; font-size: 12.5px; font-weight: 600; padding: 10px 12px;
+			border-radius: 8px; border: 1px solid transparent; }
+		.krq-result-state { font-weight: 500; margin-top: 4px; }
+		.krq-result--info { color: #1a7f4b; background: rgba(26,127,75,0.10); border-color: rgba(26,127,75,0.3); }
+		.krq-result--warning { color: #9a6700; background: rgba(212,167,44,0.14); border-color: rgba(212,167,44,0.45); }
+		.krq-result--error { color: #8a1f11; background: rgba(193,42,28,0.12); border-color: rgba(193,42,28,0.5); }
 	`;
 	$(`<style id="krq-styles">${css}</style>`).appendTo(document.head);
 }

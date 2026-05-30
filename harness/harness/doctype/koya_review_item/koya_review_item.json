@@ -8,6 +8,7 @@
  "field_order": [
   "ref",
   "state",
+  "hold_reason",
   "asset",
   "kes_amount",
   "asset_amount",
@@ -34,6 +35,12 @@
    "fieldname": "state",
    "fieldtype": "Data",
    "label": "State",
+   "read_only": 1
+  },
+  {
+   "fieldname": "hold_reason",
+   "fieldtype": "Data",
+   "label": "Hold Reason (Koya)",
    "read_only": 1
   },
   {
