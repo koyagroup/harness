@@ -21,48 +21,32 @@ from decimal import Decimal, InvalidOperation
 
 import frappe
 
+from harness.koya_harness.api._responses import (
+	fail as _fail,
+)
+from harness.koya_harness.api._responses import (
+	internal_error as _internal_error,
+)
+from harness.koya_harness.api._responses import (
+	set_status as _set_status,
+)
+from harness.koya_harness.api._responses import (
+	validation_error as _validation_error,
+)
+from harness.koya_harness.audit import write_audit
 from harness.koya_harness.log import get_logger
 from harness.koya_harness.pii import scan_recent_for_pii
 from harness.koya_harness.verify import verify_outbound_signed_request
 
 _RATE_MIRROR = "Koya Rate Mirror"
 _TXN_MIRROR = "Koya Transaction Mirror"
+_REVIEW_ITEM = "Koya Review Item"
 _DECIMAL_RATE_FIELDS = ("mid_rate", "buy_rate", "sell_rate", "spread_pct")
 _DECIMAL_TXN_FIELDS = ("kes_amount", "asset_amount")
 
 
 def _log(msg: str) -> None:
 	get_logger().info(msg)
-
-
-def _set_status(code: int) -> None:
-	frappe.local.response["http_status_code"] = code
-
-
-def _fail(envelope: dict) -> dict:
-	"""Strip the internal http_status key, set the HTTP status, return the §6 envelope."""
-	_set_status(envelope.get("http_status", 400))
-	return {"ok": False, "error": envelope["error"]}
-
-
-def _validation_error(message: str, correlation_id: str) -> dict:
-	_set_status(400)
-	return {
-		"ok": False,
-		"error": {"code": "validation_error", "message": message, "request_id": correlation_id},
-	}
-
-
-def _internal_error(correlation_id: str) -> dict:
-	_set_status(500)
-	return {
-		"ok": False,
-		"error": {
-			"code": "internal_error",
-			"message": "Unexpected error handling the mirror push.",
-			"request_id": correlation_id,
-		},
-	}
 
 
 def _is_decimal_string(value) -> bool:
@@ -81,6 +65,192 @@ def _parse_snapshot_at(value):
 		return frappe.utils.get_datetime(str(value).replace("Z", "+00:00"))
 	except Exception:
 		return None
+
+
+# ---------------------------------------------------------------- v2 risk schema
+#
+# Phase 3 adds an optional `risk` object on MANUAL_REVIEW items in recent[]. The
+# receiver tolerates v1 (no `risk` anywhere) and v2 (some items carry `risk`)
+# IDENTICALLY — it keys on field presence (`"risk" in item`), NEVER on
+# schema_version. Validation is warn-and-store, matching the PII guard: a malformed
+# risk object is logged (signal name / stable code only, never values) but the
+# snapshot is still stored — Koya is the source of truth.
+
+_KNOWN_RISK_SIGNALS = frozenset(
+	{
+		"amount_vs_kyc_tier",
+		"velocity_count_24h",
+		"velocity_volume_24h",
+		"first_transaction",
+		"destination_reuse_unknown",
+		"structuring_pattern",
+		"session_anomaly",
+	}
+)
+
+
+def _is_int(value) -> bool:
+	"""True for a genuine int — bool is a subclass of int and is NOT accepted here."""
+	return isinstance(value, int) and not isinstance(value, bool)
+
+
+def validate_risk_object(risk) -> tuple[bool, str | None]:
+	"""Validate a v2 `risk` object's shape. Pure; returns (ok, error_code|None).
+
+	Hard failures are STRUCTURAL (wrong type, out-of-range integer) and return a stable
+	snake_case error_code — but they are NEVER a reason to reject the snapshot; the caller
+	warns-and-stores. Soft issues (unknown band string, unknown signal name) are NOT hard
+	failures — see `risk_warnings`. `value` is heterogeneous (str | int | float | None,
+	bool tolerated as an int) and is NEVER type-coerced.
+	"""
+	if not isinstance(risk, dict):
+		return False, "risk_not_object"
+
+	score = risk.get("score")
+	if not _is_int(score) or not (0 <= score <= 100):
+		return False, "risk_score_range"
+
+	scorer_version = risk.get("scorer_version")
+	if not _is_int(scorer_version) or scorer_version < 1:
+		return False, "risk_scorer_version"
+
+	# band must be a string, but an unknown band value is warn-only (not rejected).
+	if not isinstance(risk.get("band"), str):
+		return False, "risk_band_type"
+
+	if _parse_snapshot_at(risk.get("computed_at")) is None:
+		return False, "risk_computed_at"
+
+	breakdown = risk.get("breakdown")
+	if not isinstance(breakdown, list):
+		return False, "risk_breakdown_not_list"
+
+	for row in breakdown:
+		if not isinstance(row, dict):
+			return False, "risk_breakdown_row_not_object"
+		if not isinstance(row.get("signal"), str):
+			return False, "risk_signal_type"
+		value = row.get("value")
+		if not (value is None or isinstance(value, (str, int, float))):
+			return False, "risk_value_type"
+		weight = row.get("weight")
+		if not _is_int(weight) or weight < 0:
+			return False, "risk_weight"
+		contribution = row.get("contribution")
+		if not _is_int(contribution) or contribution < 0 or contribution > weight:
+			return False, "risk_contribution_range"
+		if not isinstance(row.get("reason"), str):
+			return False, "risk_reason_type"
+
+	return True, None
+
+
+def risk_warnings(risk) -> list[str]:
+	"""Soft, non-rejecting warnings for a risk object.
+
+	Returns stable codes / band labels / signal NAMES only — NEVER transaction values
+	(PII discipline). Safe to call on a structurally invalid object (guards each access).
+	"""
+	warnings: list[str] = []
+	if not isinstance(risk, dict):
+		return warnings
+	band = risk.get("band")
+	if isinstance(band, str) and band not in ("PASS", "REVIEW"):
+		warnings.append(f"unknown_band:{band}")
+	breakdown = risk.get("breakdown")
+	if isinstance(breakdown, list):
+		for row in breakdown:
+			if isinstance(row, dict):
+				signal = row.get("signal")
+				if isinstance(signal, str) and signal not in _KNOWN_RISK_SIGNALS:
+					warnings.append(f"unknown_signal:{signal}")
+	return warnings
+
+
+def _collect_risk_warnings(recent: list) -> list[str]:
+	"""Walk recent[], validating any item that carries a `risk` object (field-presence
+	keyed, per item). Returns the de-duplicated, sorted list of warning/error codes —
+	signal names and stable codes only, never values."""
+	codes: list[str] = []
+	for item in recent:
+		if isinstance(item, dict) and "risk" in item:
+			ok_risk, err_code = validate_risk_object(item["risk"])
+			if not ok_risk and err_code:
+				codes.append(err_code)
+			codes.extend(risk_warnings(item["risk"]))
+	return sorted(set(codes))
+
+
+def _coerce_int(value):
+	"""Store an Int field defensively — non-int (e.g. a malformed string score) → None,
+	so a degraded risk object never blocks the review-queue upsert."""
+	return value if isinstance(value, int) and not isinstance(value, bool) else None
+
+
+def _naive_dt(value):
+	"""Parse an RFC-3339 timestamp to a NAIVE datetime for a typed Datetime column.
+
+	`_parse_snapshot_at` yields a tz-aware datetime (`+00:00`), which MariaDB rejects for a
+	real DATETIME column (the Single mirror doctypes dodge this because Singles store every
+	field as text). We strip the tz, keeping the UTC wall-clock — these are Koya reference
+	timestamps shown for display only and are labelled "(Koya)".
+	"""
+	dt = _parse_snapshot_at(value)
+	if dt is not None and getattr(dt, "tzinfo", None) is not None:
+		dt = dt.replace(tzinfo=None)
+	return dt
+
+
+def _reconcile_review_items(recent: list, received_at) -> None:
+	"""Snapshot reconciliation for the review queue (G2): rebuild it from this push.
+
+	Order: upsert every item with state == MANUAL_REVIEW AND a `risk` object (keyed by
+	ref); then delete every existing review item whose ref is not in that set. The
+	snapshot is authoritative for "what is currently pending review" — delete-immediately,
+	never accumulate. Best-effort: a per-item failure is logged (ref only) and skipped so
+	reconciliation can NEVER fail the mirror receive (the snapshot is already stored).
+	"""
+	current_refs = set()
+	for item in recent:
+		if not (isinstance(item, dict) and item.get("state") == "MANUAL_REVIEW" and "risk" in item):
+			continue
+		ref = item.get("ref")
+		if not ref:
+			continue
+		current_refs.add(ref)
+		try:
+			risk = item.get("risk") if isinstance(item.get("risk"), dict) else {}
+			if frappe.db.exists(_REVIEW_ITEM, ref):
+				doc = frappe.get_doc(_REVIEW_ITEM, ref)
+			else:
+				doc = frappe.new_doc(_REVIEW_ITEM)
+				doc.ref = ref
+			doc.state = item.get("state")
+			doc.asset = item.get("asset")
+			doc.kes_amount = item.get("kes_amount")
+			doc.asset_amount = item.get("asset_amount")
+			doc.created_at = _naive_dt(item.get("created_at"))
+			doc.updated_at = _naive_dt(item.get("updated_at"))
+			doc.risk_score = _coerce_int(risk.get("score"))
+			doc.risk_band = risk.get("band") if isinstance(risk.get("band"), str) else None
+			doc.scorer_version = _coerce_int(risk.get("scorer_version"))
+			doc.risk_computed_at = _naive_dt(risk.get("computed_at"))
+			doc.risk_breakdown_json = json.dumps(
+				risk.get("breakdown") if isinstance(risk.get("breakdown"), list) else [],
+				separators=(",", ":"),
+			)
+			doc.received_at = received_at
+			doc.save(ignore_permissions=True)
+		except Exception:
+			get_logger().warning(f"review item upsert skipped ref={ref}")
+
+	# Delete-missing: anything no longer in the current MANUAL_REVIEW+risk set.
+	try:
+		for name in frappe.get_all(_REVIEW_ITEM, pluck="name"):
+			if name not in current_refs:
+				frappe.delete_doc(_REVIEW_ITEM, name, ignore_permissions=True, force=True)
+	except Exception:
+		get_logger().warning("review item delete-missing sweep failed")
 
 
 # --------------------------------------------------------------------------- rates
@@ -116,6 +286,15 @@ def rates() -> dict:
 		doc.last_source = ", ".join(sources)
 		doc.rates_json = json.dumps(rates_list, separators=(",", ":"))
 		doc.save(ignore_permissions=True)
+
+		# G3: audit (best-effort — never fails the receive).
+		write_audit(
+			"mirror_rates_received",
+			correlation_id=koya_request_id,
+			harness_request_id=correlation_id,
+			detail={"rates_count": len(rates_list), "sources_count": len(sources)},
+		)
+
 		frappe.db.commit()
 
 		_log(f"mirror rates accepted koya_request_id={koya_request_id} cid={correlation_id}")
@@ -179,6 +358,16 @@ def transactions() -> dict:
 				f"koya_request_id={koya_request_id} cid={correlation_id}"
 			)
 
+		# v2 risk schema (Phase 3): validate any item carrying a `risk` object, keyed on
+		# field presence per item — NEVER on schema_version. Warn-and-store: a malformed
+		# risk object is logged (codes / signal names only, never values) and still stored.
+		risk_warning_codes = _collect_risk_warnings(recent)
+		if risk_warning_codes:
+			get_logger().warning(
+				f"mirror transactions risk validation warnings={risk_warning_codes} "
+				f"koya_request_id={koya_request_id} cid={correlation_id}"
+			)
+
 		doc = frappe.get_single(_TXN_MIRROR)
 		doc.request_id = koya_request_id
 		doc.schema_version = body.get("schema_version")
@@ -191,6 +380,38 @@ def transactions() -> dict:
 		doc.status_counts_json = json.dumps(body.get("status_counts") or {}, separators=(",", ":"))
 		doc.recent_json = json.dumps(recent, separators=(",", ":"))
 		doc.save(ignore_permissions=True)
+
+		# G2: rebuild the review queue from this snapshot (upsert MANUAL_REVIEW+risk items,
+		# delete the rest). Best-effort inside the helper — never fails the receive.
+		_reconcile_review_items(recent, doc.received_at)
+
+		# G3: audit (best-effort — never fails the receive). Counts + key names only.
+		manual_review_count = sum(
+			1 for i in recent if isinstance(i, dict) and i.get("state") == "MANUAL_REVIEW"
+		)
+		risk_items_count = sum(1 for i in recent if isinstance(i, dict) and "risk" in i)
+		write_audit(
+			"mirror_transactions_received",
+			correlation_id=koya_request_id,
+			harness_request_id=correlation_id,
+			detail={
+				"recent_count": len(recent),
+				"manual_review_count": manual_review_count,
+				"risk_items_count": risk_items_count,
+				"status_counts_keys": sorted((body.get("status_counts") or {}).keys()),
+				"risk_warnings": len(risk_warning_codes),
+			},
+		)
+		if risk_warning_codes:
+			write_audit(
+				"mirror_risk_validation_warning",
+				correlation_id=koya_request_id,
+				harness_request_id=correlation_id,
+				outcome="warning",
+				detail={"warning_count": len(risk_warning_codes), "codes": risk_warning_codes},
+				error_code=risk_warning_codes[0],
+			)
+
 		frappe.db.commit()
 
 		_log(f"mirror transactions accepted koya_request_id={koya_request_id} cid={correlation_id}")

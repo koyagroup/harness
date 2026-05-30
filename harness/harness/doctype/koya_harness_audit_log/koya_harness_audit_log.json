@@ -1,0 +1,91 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-05-30 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "event_type",
+  "event_time",
+  "outcome",
+  "correlation_id",
+  "harness_request_id",
+  "error_code",
+  "detail_json"
+ ],
+ "fields": [
+  {
+   "fieldname": "event_type",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Event Type",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "event_time",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Event Time",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "outcome",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Outcome",
+   "read_only": 1
+  },
+  {
+   "fieldname": "correlation_id",
+   "fieldtype": "Data",
+   "label": "Correlation ID (Koya)",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "harness_request_id",
+   "fieldtype": "Data",
+   "label": "Harness Request ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "error_code",
+   "fieldtype": "Data",
+   "label": "Error Code",
+   "read_only": 1
+  },
+  {
+   "fieldname": "detail_json",
+   "fieldtype": "Long Text",
+   "label": "Detail (JSON, no PII)",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-05-30 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Harness",
+ "name": "Koya Harness Audit Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "read": 1,
+   "role": "System Manager"
+  },
+  {
+   "read": 1,
+   "role": "koya_harness_compliance"
+  },
+  {
+   "read": 1,
+   "role": "koya_harness_ops"
+  }
+ ],
+ "read_only": 1,
+ "sort_field": "event_time",
+ "sort_order": "DESC",
+ "track_changes": 0
+}

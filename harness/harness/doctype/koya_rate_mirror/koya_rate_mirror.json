@@ -62,6 +62,14 @@
   {
    "read": 1,
    "role": "System Manager"
+  },
+  {
+   "read": 1,
+   "role": "koya_harness_compliance"
+  },
+  {
+   "read": 1,
+   "role": "koya_harness_ops"
   }
  ],
  "read_only": 1,

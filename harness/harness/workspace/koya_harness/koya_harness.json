@@ -1,0 +1,72 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"khh_hdr\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Koya Harness</span>\",\"col\":12}},{\"id\":\"khh_s1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Operations Console\",\"col\":3}},{\"id\":\"khh_s2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Review Queue\",\"col\":3}},{\"id\":\"khh_s3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Mirror Status\",\"col\":3}},{\"id\":\"khh_s4\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Audit Log\",\"col\":3}}]",
+ "creation": "2026-05-30 12:00:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "shield",
+ "idx": 0,
+ "indicator_color": "",
+ "is_hidden": 0,
+ "label": "Koya Harness",
+ "links": [],
+ "modified": "2026-05-30 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Harness",
+ "name": "Koya Harness",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "koya_harness_compliance"
+  },
+  {
+   "role": "koya_harness_ops"
+  }
+ ],
+ "sequence_id": 100.0,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "",
+   "label": "Operations Console",
+   "link_to": "koya-harness-home",
+   "stats_filter": "[]",
+   "type": "Page"
+  },
+  {
+   "color": "Yellow",
+   "doc_view": "",
+   "label": "Review Queue",
+   "link_to": "koya-review-queue",
+   "stats_filter": "[]",
+   "type": "Page"
+  },
+  {
+   "color": "Green",
+   "doc_view": "",
+   "label": "Mirror Status",
+   "link_to": "koya-mirror-status",
+   "stats_filter": "[]",
+   "type": "Page"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "List",
+   "label": "Audit Log",
+   "link_to": "Koya Harness Audit Log",
+   "stats_filter": "[]",
+   "type": "DocType"
+  }
+ ],
+ "title": "Koya Harness"
+}

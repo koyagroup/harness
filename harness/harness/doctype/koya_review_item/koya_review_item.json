@@ -1,0 +1,131 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:ref",
+ "creation": "2026-05-30 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "ref",
+  "state",
+  "asset",
+  "kes_amount",
+  "asset_amount",
+  "created_at",
+  "updated_at",
+  "risk_score",
+  "risk_band",
+  "scorer_version",
+  "risk_computed_at",
+  "risk_breakdown_json",
+  "received_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "ref",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Conversion Ref",
+   "read_only": 1,
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "state",
+   "fieldtype": "Data",
+   "label": "State",
+   "read_only": 1
+  },
+  {
+   "fieldname": "asset",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Asset",
+   "read_only": 1
+  },
+  {
+   "fieldname": "kes_amount",
+   "fieldtype": "Data",
+   "label": "KES Amount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "asset_amount",
+   "fieldtype": "Data",
+   "label": "Asset Amount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "created_at",
+   "fieldtype": "Datetime",
+   "label": "Created At (Koya)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "updated_at",
+   "fieldtype": "Datetime",
+   "label": "Updated At (Koya)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "risk_score",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Risk Score",
+   "read_only": 1
+  },
+  {
+   "fieldname": "risk_band",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Risk Band",
+   "read_only": 1
+  },
+  {
+   "fieldname": "scorer_version",
+   "fieldtype": "Int",
+   "label": "Scorer Version",
+   "read_only": 1
+  },
+  {
+   "fieldname": "risk_computed_at",
+   "fieldtype": "Datetime",
+   "label": "Risk Computed At (Koya)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "risk_breakdown_json",
+   "fieldtype": "Long Text",
+   "label": "Risk Breakdown (JSON)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "received_at",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Received At (Harness)",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-05-30 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Harness",
+ "name": "Koya Review Item",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "read": 1,
+   "role": "System Manager"
+  },
+  {
+   "read": 1,
+   "role": "koya_harness_compliance"
+  }
+ ],
+ "read_only": 1,
+ "sort_field": "received_at",
+ "sort_order": "DESC",
+ "track_changes": 0
+}
