@@ -3,7 +3,20 @@
 > Single source of truth for the harness app's current state. Mirrors the Koya-side
 > STATUS so the two builds stay reconcilable. No secret values here — key names only.
 
-**Last updated:** 2026-05-30 (step-06)
+**Last updated:** 2026-05-30 (step-07)
+
+## All three hold types now surface (step-07, Koya-independent)
+The review-queue reconcile filter was relaxed from `MANUAL_REVIEW AND "risk" in item` to
+`MANUAL_REVIEW AND ("risk" in item OR "hold_reason" in item)`, so all three v3 hold types reach the
+queue: risk (carries `risk{}`), compliance + delivery (carry `hold_reason`, no risk object). A new
+`has_risk` (Check) field on `Koya Review Item` is the single source of truth for "risk-scored": the
+risk breakdown + score render only when `has_risk`; no-risk holds show the hold banner + a no-risk
+note (NEVER a misleading 0-score or empty breakdown). The Phase-4 reason-aware confirmation was
+VERIFIED to fire for the delivery case (REJECT = REFUND-obligation wording) — no change needed. The
+**delivery-hold joint test is now unblocked on the harness side** (awaiting Koya's P0 fix + a
+coordinated window). Live-fire OFF. Full suite **171/171** (123 integration + 48 unit). See
+`docs/progress/step-07.md`.
+
 
 ## App polish (step-06, Koya-independent)
 The harness is now a **polished, desk-installable app**: app-launcher identity + branding

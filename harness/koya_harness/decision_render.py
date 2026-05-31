@@ -81,3 +81,17 @@ def confirmation_text(hold_reason, decision) -> str:
 			return "Reject? This will book a REFUND OBLIGATION — the customer's KES is owed back."
 		return "Reject and decline this conversion? No funds were collected."
 	return f"Confirm {decision} for this conversion?"
+
+
+def no_risk_note(hold_reason) -> str:
+	"""Detail-view copy for a hold with NO risk object, so a reviewer isn't confused by the
+	absence of a score. Compliance & delivery holds are held by their own screens, not the risk
+	scorer. Total: never raises."""
+	if hold_reason == "compliance_review_required":
+		return "Held by the compliance screen — not risk-scored (no risk score)."
+	if hold_reason == _POSTPAY_REASON:
+		return "Held after BTC delivery retries were exhausted — PAYMENT RECEIVED; not risk-scored."
+	if hold_reason == "risk_review_required":
+		# A risk hold normally carries a risk object; reaching here means it didn't.
+		return "Flagged for risk review, but no risk score was provided."
+	return "Held — not risk-scored."

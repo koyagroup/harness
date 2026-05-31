@@ -57,6 +57,7 @@ def review_queue_state() -> dict:
 			"ref",
 			"asset",
 			"kes_amount",
+			"has_risk",
 			"risk_score",
 			"risk_band",
 			"risk_breakdown_json",
@@ -76,7 +77,7 @@ def review_queue_state() -> dict:
 				"ref": r.ref,
 				"asset": r.asset,
 				"kes_display": risk_render.format_kes(r.kes_amount),
-				"score": r.risk_score,
+				"score": r.risk_score if r.has_risk else None,
 				"band": r.risk_band,
 				"band_class": risk_render.band_class(r.risk_band),
 				"top_reason": _truncate(top.get("reason") or ""),
@@ -106,8 +107,35 @@ def review_item_detail(name: str) -> dict:
 		return {"permitted": True, "found": False}
 
 	doc = frappe.get_doc(_REVIEW, name)
-	breakdown = _loads(doc.risk_breakdown_json)
 	hold_reason = doc.get("hold_reason")
+	has_risk = bool(doc.has_risk)
+	# Risk fields render ONLY when the hold was risk-scored. Compliance/delivery holds carry a
+	# hold_reason but no risk object — show the banner + a no-risk note, NEVER a 0-score or an
+	# empty breakdown table.
+	if has_risk:
+		risk_fields = {
+			"score": doc.risk_score,
+			"band": doc.risk_band,
+			"band_class": risk_render.band_class(doc.risk_band),
+			"scorer_version": doc.scorer_version,
+			"scorer_caption": f"Scored by engine v{doc.scorer_version}" if doc.scorer_version else "",
+			"computed_at": str(doc.risk_computed_at) if doc.risk_computed_at else None,
+			"computed_at_relative": frappe.utils.pretty_date(doc.risk_computed_at)
+			if doc.risk_computed_at
+			else "—",
+			"breakdown_html": risk_render.render_breakdown_html(_loads(doc.risk_breakdown_json)),
+		}
+	else:
+		risk_fields = {
+			"score": None,
+			"band": None,
+			"band_class": "",
+			"scorer_version": None,
+			"scorer_caption": "",
+			"computed_at": None,
+			"computed_at_relative": "—",
+			"breakdown_html": "",
+		}
 	return {
 		"permitted": True,
 		"found": True,
@@ -119,6 +147,10 @@ def review_item_detail(name: str) -> dict:
 		"hold_reason": hold_reason,
 		"hold_reason_label": decision_render.hold_reason_label(hold_reason),
 		"hold_reason_class": decision_render.hold_reason_class(hold_reason),
+		# has_risk gates the risk surface; no_risk_note explains the absence of a score so a
+		# reviewer isn't confused by a compliance/delivery hold having no breakdown.
+		"has_risk": has_risk,
+		"no_risk_note": "" if has_risk else decision_render.no_risk_note(hold_reason),
 		"can_decide": can_send_decisions(),
 		"confirm_approve": decision_render.confirmation_text(hold_reason, "APPROVE"),
 		"confirm_reject": decision_render.confirmation_text(hold_reason, "REJECT"),
@@ -128,15 +160,6 @@ def review_item_detail(name: str) -> dict:
 		"asset_amount": doc.asset_amount,
 		"created_at": str(doc.created_at) if doc.created_at else None,
 		"updated_at": str(doc.updated_at) if doc.updated_at else None,
-		"score": doc.risk_score,
-		"band": doc.risk_band,
-		"band_class": risk_render.band_class(doc.risk_band),
-		"scorer_version": doc.scorer_version,
-		"scorer_caption": f"Scored by engine v{doc.scorer_version}" if doc.scorer_version else "",
-		"computed_at": str(doc.risk_computed_at) if doc.risk_computed_at else None,
-		"computed_at_relative": frappe.utils.pretty_date(doc.risk_computed_at)
-		if doc.risk_computed_at
-		else "—",
 		"received_at": str(doc.received_at) if doc.received_at else None,
-		"breakdown_html": risk_render.render_breakdown_html(breakdown),
+		**risk_fields,
 	}

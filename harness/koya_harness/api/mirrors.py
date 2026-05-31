@@ -212,7 +212,14 @@ def _reconcile_review_items(recent: list, received_at) -> None:
 	"""
 	current_refs = set()
 	for item in recent:
-		if not (isinstance(item, dict) and item.get("state") == "MANUAL_REVIEW" and "risk" in item):
+		# Surface ALL manual-review hold types: risk holds carry a `risk` object; compliance &
+		# delivery holds carry `hold_reason` but NO risk object (held by the compliance screen /
+		# delivery exhaustion, not the scorer). An item with neither is not a reviewable hold.
+		if not (
+			isinstance(item, dict)
+			and item.get("state") == "MANUAL_REVIEW"
+			and ("risk" in item or "hold_reason" in item)
+		):
 			continue
 		ref = item.get("ref")
 		if not ref:
@@ -235,6 +242,10 @@ def _reconcile_review_items(recent: list, received_at) -> None:
 			doc.asset_amount = item.get("asset_amount")
 			doc.created_at = _naive_dt(item.get("created_at"))
 			doc.updated_at = _naive_dt(item.get("updated_at"))
+			# has_risk is the single source of truth for "this hold was risk-scored". A no-risk
+			# hold leaves risk_score at the Int default (0) — INERT, never rendered (the read APIs
+			# gate the score/breakdown on has_risk), so it can't show a misleading 0-score.
+			doc.has_risk = 1 if risk else 0
 			doc.risk_score = _coerce_int(risk.get("score"))
 			doc.risk_band = risk.get("band") if isinstance(risk.get("band"), str) else None
 			doc.scorer_version = _coerce_int(risk.get("scorer_version"))

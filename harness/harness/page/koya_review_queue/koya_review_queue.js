@@ -124,12 +124,16 @@ frappe.pages["koya-review-queue"].on_page_load = function (wrapper) {
 					: ""
 			}
 			<div class="krq-detail-card">
-				<div class="krq-score-wrap">
-					<div class="krq-score">${esc(d.score == null ? "—" : d.score)} <span class="krq-score-max">/ 100</span></div>
-					${band_badge(d.band, d.band_class)}
-					<div class="krq-caption">${esc(d.scorer_caption)}</div>
-					<div class="krq-caption">${__("Computed")} ${esc(d.computed_at_relative)}</div>
-				</div>
+				${
+					d.has_risk
+						? `<div class="krq-score-wrap">
+							<div class="krq-score">${esc(d.score == null ? "—" : d.score)} <span class="krq-score-max">/ 100</span></div>
+							${band_badge(d.band, d.band_class)}
+							<div class="krq-caption">${esc(d.scorer_caption)}</div>
+							<div class="krq-caption">${__("Computed")} ${esc(d.computed_at_relative)}</div>
+						</div>`
+						: `<div class="krq-score-wrap krq-norisk">${esc(d.no_risk_note)}</div>`
+				}
 				<div class="krq-scalars">
 					${scalar(__("Ref"), d.ref)}
 					${scalar(__("State"), d.state)}
@@ -140,8 +144,12 @@ frappe.pages["koya-review-queue"].on_page_load = function (wrapper) {
 					${scalar(__("Updated"), d.updated_at)}
 				</div>
 			</div>
-			<div class="krq-bd-title">${__("Risk breakdown")}</div>
-			<div class="krq-bd-host">${d.breakdown_html || ""}</div>
+			${
+				d.has_risk
+					? `<div class="krq-bd-title">${__("Risk breakdown")}</div>
+						<div class="krq-bd-host">${d.breakdown_html || ""}</div>`
+					: ""
+			}
 			${d.can_decide ? decision_panel() : ""}
 		`);
 		$root.find("[data-back]").on("click", () => frappe.set_route("koya-review-queue"));
@@ -320,6 +328,7 @@ function krq_inject_styles() {
 			border-radius: var(--border-radius-lg, 10px); padding: 18px; margin-bottom: 18px; }
 		@media (max-width: 800px) { .krq-detail-card { grid-template-columns: 1fr; } }
 		.krq-score-wrap { text-align: center; }
+		.krq-norisk { text-align: left; font-size: 12.5px; color: var(--text-muted); line-height: 1.5; }
 		.krq-score { font-size: 40px; font-weight: 800; line-height: 1.1; }
 		.krq-score-max { font-size: 16px; font-weight: 500; color: var(--text-muted); }
 		.krq-caption { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
