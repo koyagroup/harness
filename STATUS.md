@@ -3,7 +3,20 @@
 > Single source of truth for the harness app's current state. Mirrors the Koya-side
 > STATUS so the two builds stay reconcilable. No secret values here — key names only.
 
-**Last updated:** 2026-05-31 (step-08)
+**Last updated:** 2026-05-31 (step-09)
+
+## Standard-views-first redesign (step-09, Koya-independent)
+Shifted the harness toward the mature-Frappe idiom (per the HARNESS-RECON-HRMS recon: standard
+List/Form views + workspace dashboards, custom pages only where bespoke). **Review queue** is now the
+standard `Koya Review Item` **List** (get_indicator by hold type) + **Form** (hold banner + risk
+breakdown + Approve/Reject `frm.add_custom_button`s → `send_settlement_decision` via `frappe.ui.Dialog`);
+the custom `koya-review-queue` page was removed. **Decision history** renders via `frappe.DataTable`
+(paired view kept — bespoke), and the raw `Koya Harness Audit Log` List got indicators + more
+columns (the "System events" target). **Workspace** gained LIVE quick-lists above the existing
+dashboards. `koya-mirror-status` kept as the bespoke live-stale surface. **Presentation only — the
+signed-decision money path is reused unchanged; live-fire OFF.** Full suite **180/180**. See
+`docs/progress/step-09.md`.
+
 
 ## Decision-history audit view (step-08, Koya-independent)
 A read-only compliance VIEW over the Phase-4 audit data: `koya_harness/api/audit_view.py`

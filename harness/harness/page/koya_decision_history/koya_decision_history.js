@@ -55,22 +55,18 @@ frappe.pages["koya-decision-history"].on_page_load = function (wrapper) {
 			$root.html(`<div class="kdh-empty">${__("You do not have access to the decision history.")}</div>`);
 			return;
 		}
-		const rows = (data.records || []).map(row_html).join("");
-		const table = rows
-			? `<div class="kdh-tablewrap"><table class="kdh-table"><thead><tr>
-					<th>${__("Session")}</th><th>${__("Decision")}</th><th>${__("Hold reason")}</th>
-					<th>${__("Reviewer")}</th><th>${__("Decided")}</th><th>${__("Resulting state")}</th>
-					<th>${__("Outcome")}</th><th>${__("Idempotent")}</th>
-				</tr></thead><tbody>${rows}</tbody></table></div>`
-			: `<div class="kdh-empty">${__("No settlement decisions recorded yet.")}</div>`;
-
+		const records = data.records || [];
 		$root.html(`
 			<div class="kdh-head">
 				<div class="kdh-title">${__("Decision History")} · ${esc(data.count)}</div>
 				<a class="kdh-link" data-sysevents href="#">${__("System events")} →</a>
 			</div>
 			${filter_bar()}
-			${table}
+			${
+				records.length
+					? `<div class="kdh-dt"></div>`
+					: `<div class="kdh-empty">${__("No settlement decisions recorded yet.")}</div>`
+			}
 		`);
 		$root.find("[data-apply]").on("click", () => load());
 		$root.find("[data-filter]").on("change", () => load());
@@ -79,6 +75,7 @@ frappe.pages["koya-decision-history"].on_page_load = function (wrapper) {
 			frappe.route_options = { event_type: ["in", SYSTEM_EVENTS] };
 			frappe.set_route("List", "Koya Harness Audit Log");
 		});
+		if (records.length) render_datatable(records);
 	}
 
 	function filter_bar() {
@@ -107,29 +104,54 @@ frappe.pages["koya-decision-history"].on_page_load = function (wrapper) {
 			</div>`;
 	}
 
-	function row_html(r) {
-		const dec = (r.decision || "—").toUpperCase();
-		const dec_cls = dec === "APPROVE" ? "approve" : dec === "REJECT" ? "reject" : "other";
-		// REFUND_PENDING reads distinctly — a reject that booked a refund obligation.
-		const refund = r.resulting_state === "REFUND_PENDING";
-		const state_cls = refund ? "refund" : "";
-		const out = (r.outcome || "").toLowerCase();
-		const out_cls = out === "success" ? "ok" : out === "warning" ? "warn" : out ? "fail" : "pending";
-		const pending = r.status === "pending";
-		return `<tr class="${pending ? "kdh-row--pending" : ""}">
-			<td><span class="kdh-ref">${esc(r.session_ref)}</span></td>
-			<td><span class="kdh-badge kdh-badge--${dec_cls}">${esc(dec)}</span></td>
-			<td>${esc(r.hold_reason_label || r.hold_reason || "—")}</td>
-			<td>${esc(r.reviewer || "—")}</td>
-			<td>${esc(r.decided_at || "—")}</td>
-			<td class="kdh-state ${state_cls}">${esc(
-				pending ? __("awaiting response…") : r.resulting_label || r.resulting_state || "—",
-			)}</td>
-			<td><span class="kdh-badge kdh-badge--${out_cls}">${esc(
-				pending ? __("pending") : out || "—",
-			)}${r.error_code ? " · " + esc(r.error_code) : ""}</span></td>
-			<td>${r.idempotent ? __("yes") : ""}</td>
-		</tr>`;
+	// Render via frappe.DataTable (native sort/scroll/resize). Badge HTML is pre-rendered into the
+	// cell values (frappe-datatable renders cell content as HTML) — values are HTML-escaped first.
+	function render_datatable(records) {
+		const badge = (txt, cls) => `<span class="kdh-badge kdh-badge--${cls}">${esc(txt)}</span>`;
+		const rows = records.map((r) => {
+			const dec = (r.decision || "—").toUpperCase();
+			const dec_cls = dec === "APPROVE" ? "approve" : dec === "REJECT" ? "reject" : "other";
+			const pending = r.status === "pending";
+			const o = (r.outcome || "").toLowerCase();
+			const out_cls = pending ? "pending" : o === "success" ? "ok" : o === "warning" ? "warn" : o ? "fail" : "pending";
+			const resulting = pending
+				? `<span class="text-muted">${esc(__("awaiting response…"))}</span>`
+				: r.resulting_state === "REFUND_PENDING"
+					? `<span class="kdh-state refund">${esc(r.resulting_label || r.resulting_state)}</span>`
+					: esc(r.resulting_label || r.resulting_state || "—");
+			return {
+				session_ref: `<span class="kdh-ref">${esc(r.session_ref)}</span>`,
+				decision: badge(dec, dec_cls),
+				hold_reason: esc(r.hold_reason_label || r.hold_reason || "—"),
+				reviewer: esc(r.reviewer || "—"),
+				decided_at: esc(r.decided_at || "—"),
+				resulting: resulting,
+				outcome: badge(
+					(pending ? __("pending") : r.outcome || "—") + (r.error_code ? " · " + r.error_code : ""),
+					out_cls,
+				),
+				idempotent: r.idempotent ? __("yes") : "",
+			};
+		});
+		const columns = [
+			{ name: __("Session"), id: "session_ref", width: 150 },
+			{ name: __("Decision"), id: "decision", width: 110 },
+			{ name: __("Hold reason"), id: "hold_reason", width: 180 },
+			{ name: __("Reviewer"), id: "reviewer", width: 160 },
+			{ name: __("Decided"), id: "decided_at", width: 160 },
+			{ name: __("Resulting state"), id: "resulting", width: 240 },
+			{ name: __("Outcome"), id: "outcome", width: 150 },
+			{ name: __("Idempotent"), id: "idempotent", width: 100 },
+		];
+		const el = $root.find(".kdh-dt").get(0);
+		new frappe.DataTable(el, {
+			columns: columns,
+			data: rows,
+			layout: "fluid",
+			cellHeight: 38,
+			disableReorderColumn: true,
+			noDataMessage: __("No settlement decisions recorded yet."),
+		});
 	}
 
 	load();

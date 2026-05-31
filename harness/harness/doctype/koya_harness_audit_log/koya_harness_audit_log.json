@@ -40,6 +40,7 @@
   {
    "fieldname": "correlation_id",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Correlation ID (Koya)",
    "read_only": 1,
    "search_index": 1
@@ -53,6 +54,7 @@
   {
    "fieldname": "error_code",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Error Code",
    "read_only": 1
   },
