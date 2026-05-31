@@ -71,11 +71,11 @@ frappe.pages["koya-review-queue"].on_page_load = function (wrapper) {
 			.join("");
 
 		const table = rows
-			? `<table class="krq-table"><thead><tr>
+			? `<div class="krq-tablewrap"><table class="krq-table"><thead><tr>
 					<th>${__("Ref")}</th><th>${__("Asset")}</th>
 					<th class="krq-num">${__("KES")}</th><th>${__("Score")}</th>
 					<th>${__("Top signal")}</th><th>${__("Age")}</th>
-				</tr></thead><tbody>${rows}</tbody></table>`
+				</tr></thead><tbody>${rows}</tbody></table></div>`
 			: `<div class="krq-empty">${__("No conversions are currently in manual review.")}</div>`;
 
 		$root.html(`
@@ -287,6 +287,7 @@ function krq_inject_styles() {
 	if (document.getElementById("krq-styles")) return;
 	const css = `
 		.krq-wrap { padding: 8px 4px 24px; }
+		.krq-wrap, .krq-wrap * { box-sizing: border-box; }
 		.krq-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 		.krq-title { font-size: 16px; font-weight: 600; }
 		.krq-sub { color: var(--text-muted); font-size: 12px; margin: 4px 0 14px; }
@@ -294,7 +295,9 @@ function krq_inject_styles() {
 		.krq-pill--live { color: #1a7f4b; background: rgba(26,127,75,0.10); }
 		.krq-pill--stale { color: #9a6700; background: rgba(212,167,44,0.16); }
 		.krq-pill--neutral { color: var(--text-muted); background: var(--control-bg, rgba(125,125,125,0.12)); }
+		.krq-tablewrap { width: 100%; overflow-x: auto; }
 		.krq-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+		.krq-table th, .krq-table td { white-space: nowrap; }
 		.krq-table th { text-align: left; color: var(--text-muted); font-weight: 600; padding: 6px 8px;
 			border-bottom: 1px solid var(--border-color); }
 		.krq-table td { padding: 8px; border-bottom: 1px solid var(--border-color); }
@@ -324,6 +327,7 @@ function krq_inject_styles() {
 		.krq-scalar-l { font-size: 10px; color: var(--text-muted); letter-spacing: 0.03em; text-transform: uppercase; }
 		.krq-scalar-v { font-size: 13px; }
 		.krq-bd-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+		.krq-bd-host { width: 100%; overflow-x: auto; }
 		.krq-bd-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 		.krq-bd-table th { text-align: left; color: var(--text-muted); font-weight: 600; padding: 6px 8px;
 			border-bottom: 1px solid var(--border-color); }

@@ -104,14 +104,14 @@ function render_rates(m) {
 		.join("");
 
 	const table = rows
-		? `<table class="kms-table">
+		? `<div class="kms-tablewrap"><table class="kms-table">
 				<thead><tr>
 					<th>${__("Pair")}</th><th class="kms-num">${__("Mid")}</th>
 					<th class="kms-num">${__("Buy")}</th><th class="kms-num">${__("Sell")}</th>
 					<th class="kms-num">${__("Spread %")}</th><th>${__("Source")}</th><th>${__("Stale")}</th>
 				</tr></thead>
 				<tbody>${rows}</tbody>
-			</table>`
+			</table></div>`
 		: `<div class="kms-empty">${__("No rates in the latest snapshot.")}</div>`;
 
 	return `
@@ -156,14 +156,14 @@ function render_txns(m) {
 		.join("");
 
 	const table = rows
-		? `<table class="kms-table">
+		? `<div class="kms-tablewrap"><table class="kms-table">
 				<thead><tr>
 					<th>${__("Ref")}</th><th>${__("State")}</th><th>${__("Asset")}</th>
 					<th class="kms-num">${__("KES")}</th><th class="kms-num">${__("Asset Amt")}</th>
 					<th>${__("Tx ID")}</th><th>${__("Updated")}</th>
 				</tr></thead>
 				<tbody>${rows}</tbody>
-			</table>`
+			</table></div>`
 		: `<div class="kms-empty">${__("No recent transactions in the latest snapshot.")}</div>`;
 
 	return `
@@ -183,8 +183,9 @@ function inject_styles() {
 		.kms-wrap { padding: 8px 4px 24px; }
 		.kms-meta { color: var(--text-muted); font-size: 12px; margin-bottom: 12px; }
 		.kms-refreshing { visibility: hidden; margin-left: 6px; }
+		.kms-wrap, .kms-wrap * { box-sizing: border-box; }
 		.kms-cards { display: grid; grid-template-columns: 1fr; gap: 16px; }
-		@media (min-width: 1100px) { .kms-cards { grid-template-columns: 1fr 1fr; } }
+		.kms-card { min-width: 0; }
 		.kms-card { background: var(--card-bg, var(--fg-color)); border: 1px solid var(--border-color);
 			border-radius: var(--border-radius-lg, 10px); padding: 16px 18px; }
 		.kms-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -199,11 +200,13 @@ function inject_styles() {
 		.kms-dot--stale { background: #d4a72c; }
 		.kms-notice { color: #9a6700; background: rgba(212,167,44,0.14); border: 1px solid rgba(212,167,44,0.4);
 			border-radius: 6px; padding: 8px 10px; font-size: 12px; margin-bottom: 12px; }
-		.kms-counts { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; margin-bottom: 14px; }
-		.kms-count { border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 10px; text-align: center; }
+		.kms-counts { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; margin-bottom: 14px; }
+		.kms-count { border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 10px; text-align: center; min-width: 0; }
 		.kms-count-n { font-size: 18px; font-weight: 700; }
-		.kms-count-l { font-size: 10px; color: var(--text-muted); letter-spacing: 0.03em; }
+		.kms-count-l { font-size: 10px; color: var(--text-muted); letter-spacing: 0.03em; overflow-wrap: anywhere; }
+		.kms-tablewrap { width: 100%; overflow-x: auto; }
 		.kms-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+		.kms-table th, .kms-table td { white-space: nowrap; }
 		.kms-table th { text-align: left; color: var(--text-muted); font-weight: 600; padding: 6px 8px;
 			border-bottom: 1px solid var(--border-color); }
 		.kms-table td { padding: 6px 8px; border-bottom: 1px solid var(--border-color); }
