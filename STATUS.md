@@ -3,7 +3,16 @@
 > Single source of truth for the harness app's current state. Mirrors the Koya-side
 > STATUS so the two builds stay reconcilable. No secret values here — key names only.
 
-**Last updated:** 2026-05-31 (step-09)
+**Last updated:** 2026-05-31 (step-10)
+
+## Review-queue page restored (step-10)
+Per operator preference, the **custom `koya-review-queue` page is restored** as the review surface
+(R2 reverted): the route-driven list↔detail with risk breakdown + hold-reason banner + Approve/Reject,
+reusing the unchanged decision APIs. The rest of the step-09 redesign is **retained** — workspace LIVE
+quick-lists + dashboards (R1/R4) and the decision-history `frappe.DataTable` + raw audit-log List
+indicators (R3). Nav repointed back to the page. Full suite **180/180**; money path unchanged;
+live-fire OFF. See `docs/progress/step-10.md`.
+
 
 ## Standard-views-first redesign (step-09, Koya-independent)
 Shifted the harness toward the mature-Frappe idiom (per the HARNESS-RECON-HRMS recon: standard

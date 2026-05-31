@@ -180,7 +180,7 @@ frappe.pages["koya-harness-home"].on_page_load = function (wrapper) {
 		`);
 		$root.find("[data-reviewpage]").on("click", (e) => {
 			e.preventDefault();
-			frappe.set_route("List", "Koya Review Item");
+			frappe.set_route("koya-review-queue");
 		});
 	}
 

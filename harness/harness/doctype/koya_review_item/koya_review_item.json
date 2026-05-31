@@ -20,10 +20,7 @@
   "scorer_version",
   "risk_computed_at",
   "risk_breakdown_json",
-  "received_at",
-  "decision_section",
-  "hold_reason_html",
-  "risk_breakdown_html"
+  "received_at"
  ],
  "fields": [
   {
@@ -44,7 +41,6 @@
   {
    "fieldname": "hold_reason",
    "fieldtype": "Data",
-   "in_list_view": 1,
    "label": "Hold Reason (Koya)",
    "read_only": 1
   },
@@ -58,7 +54,6 @@
   {
    "fieldname": "kes_amount",
    "fieldtype": "Data",
-   "in_list_view": 1,
    "label": "KES Amount",
    "read_only": 1
   },
@@ -124,21 +119,6 @@
    "in_list_view": 1,
    "label": "Received At (Harness)",
    "read_only": 1
-  },
-  {
-   "fieldname": "decision_section",
-   "fieldtype": "Section Break",
-   "label": "Risk & Decision"
-  },
-  {
-   "fieldname": "hold_reason_html",
-   "fieldtype": "HTML",
-   "label": "Hold Reason"
-  },
-  {
-   "fieldname": "risk_breakdown_html",
-   "fieldtype": "HTML",
-   "label": "Risk Breakdown"
   }
  ],
  "index_web_pages_for_search": 0,
