@@ -3,7 +3,19 @@
 > Single source of truth for the harness app's current state. Mirrors the Koya-side
 > STATUS so the two builds stay reconcilable. No secret values here — key names only.
 
-**Last updated:** 2026-05-30 (step-07)
+**Last updated:** 2026-05-31 (step-08)
+
+## Decision-history audit view (step-08, Koya-independent)
+A read-only compliance VIEW over the Phase-4 audit data: `koya_harness/api/audit_view.py`
+`decision_history()` pairs each `settlement_decision_sent` ↔ `settlement_decision_response` (by
+`harness_request_id`) into one record (decision / reviewer / when / hold_reason / resulting_state /
+outcome / idempotent / status), decision-events-only, gated to compliance + System Manager,
+defensively parsed, value-free (no raw reason/amount/PII). New desk Page `koya-decision-history`
+renders the trail (APPROVE/REJECT + REFUND_PENDING + failure + pending visually distinct, filters);
+system (mirror/health) events stay separate via a link to the filtered audit-log list. Wired into the
+workspace + landing page (compliance/SM). Live-fire OFF. Full suite **180/180** (132 integration + 48
+unit). See `docs/progress/step-08.md`.
+
 
 ## All three hold types now surface (step-07, Koya-independent)
 The review-queue reconcile filter was relaxed from `MANUAL_REVIEW AND "risk" in item` to

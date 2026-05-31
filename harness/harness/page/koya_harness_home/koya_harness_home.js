@@ -61,6 +61,17 @@ frappe.pages["koya-harness-home"].on_page_load = function (wrapper) {
 			}
 
 			${
+				is_compliance
+					? `<div class="khh-section">
+						<div class="khh-h">${__("Decision History")}</div>
+						<div class="khh-audit">
+							<a class="khh-link" data-history href="#">${__("Open decision history")} →</a>
+						</div>
+					</div>`
+					: ""
+			}
+
+			${
 				can_audit
 					? `<div class="khh-section">
 						<div class="khh-h">${__("Audit Log")}</div>
@@ -78,6 +89,10 @@ frappe.pages["koya-harness-home"].on_page_load = function (wrapper) {
 		$root.find("[data-dashboard]").on("click", (e) => {
 			e.preventDefault();
 			frappe.set_route("Workspaces", "Koya Harness");
+		});
+		$root.find("[data-history]").on("click", (e) => {
+			e.preventDefault();
+			frappe.set_route("koya-decision-history");
 		});
 	}
 
