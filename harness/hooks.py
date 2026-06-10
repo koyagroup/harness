@@ -214,7 +214,13 @@ add_to_apps_screen = [
 # Request Events
 # ----------------
 # before_request = ["harness.utils.before_request"]
-# after_request = ["harness.utils.after_request"]
+# kronos is an INTERNAL app — stamp X-Robots-Tag: noindex on EVERY response (site-wide,
+# all apps' routes) so no crawler ever indexes it. Authoritative + code-side. See
+# harness/api/noindex.py.
+after_request = ["harness.api.noindex.set_no_index_headers"]
+
+# Keep /robots.txt as Disallow-all (code-enforced on every migrate).
+after_migrate = ["harness.api.noindex.enforce_robots_txt"]
 
 # Job Events
 # ----------
